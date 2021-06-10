@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+  <dict>
+    <key>CFBundleDisplayName</key>
+    <string>OncallStatus</string>
+    <key>CFBundleExecutable</key>
+    <string>OncallStatus</string>
+    <key>CFBundleIdentifier</key>
+    <string>com.github.mtougeron.oncall-status</string>
+    <key>CFBundleName</key>
+    <string>OncallStatus</string>
+    <key>CFBundleVersion</key>
+    <string>0.0.1</string>
+    <key>CFBundleIconFile</key>
+    <string>OncallStatus.icns</string>
+    <key>LSFileQuarantineEnabled</key>
+    <true/>
+    <key>LSHasLocalizedDisplayName</key>
+    <string>1</string>
+    <key>LSMinimumSystemVersion</key>
+    <string>10.15.0</string>
+    <key>NSRequiresAquaSystemAppearance</key>
+    <false/>
+    <key>NSSupportsAutomaticGraphicsSwitching</key>
+    <false/>
+    <key>LSUIElement</key>
+    <true/>
+    <key>NSHighResolutionCapable</key>
+    <true/>
+  </dict>
+</plist>
