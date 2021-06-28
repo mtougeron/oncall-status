@@ -59,10 +59,10 @@ func setOncallStatus() {
 		pagerdutyUserID = pagerdutyClient.GetCurrentUserID()
 	}
 	if pagerdutyClient.GetUserOncallStatus(pagerdutyUserID) {
-		systray.SetTitle("🟢 oncall")
+		systray.SetTitle("📳 oncall")
 		systray.SetTooltip("You are on call")
 	} else {
-		systray.SetTitle("📵")
+		systray.SetTitle("💤")
 		systray.SetTooltip("You are not on call")
 	}
 }
