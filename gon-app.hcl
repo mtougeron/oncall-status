@@ -1,4 +1,4 @@
-source = ["./OncallStatus.app", "./OncallStatus.app/Contents/OncallStatus"]
+source = ["./OncallStatus.app", "./OncallStatus.app/Contents/MacOS/OncallStatus"]
 bundle_id = "com.github.mtougeron.oncall-status"
 
 apple_id {
