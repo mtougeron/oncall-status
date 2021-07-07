@@ -55,7 +55,7 @@ jobs:
           draft: true
           prerelease: false
 
-      - name: Upload release binaries Zip
+      - name: Upload release binaries
         id: upload-release-asset
         uses: actions/upload-release-asset@v1
         env:
@@ -64,4 +64,3 @@ jobs:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: oncall-status.dmg
           asset_name: oncall-status.dmg
-          asset_content_type: application/zip
