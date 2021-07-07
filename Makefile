@@ -35,7 +35,6 @@ notarize-dmg:
 
 .PHONY: clean
 clean:
-	rm -rf OncallStatus.app/Contents/OncallStatus \
-	  OncallStatus.app/Contents/MacOS/OncallStatus \
+	rm -rf OncallStatus.app/Contents/MacOS/OncallStatus \
 	  OncallStatus.app/Contents/_CodeSignature/ \
 	  oncall-status.dmg

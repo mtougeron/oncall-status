@@ -10,13 +10,27 @@ make build && cp -a OncallStatus.app /Applications
 
 ## Build & sign a release
 
-This will eventually be moved to a GH action
+The signing & notarizing with Apple happen using [`gon`](https://github.com/mitchellh/gon).
+
+### Automation
+
+This will create a release and upload the sign & notarized application to the release.
 
 ```
-export AC_USERNAME="the apple connect username"
-export AC_PASSWORD="the password for the username"
-make build
-make sign
+git tag -a v#.#.# -m "<release notes>"
+git push origin v#.#.#
 ```
 
-Upload the `oncall-status.dmg` to the GitHub release
+### Local testing
+
+To test locally you can run the following `make` commands
+
+`make build` -- Build the application binary
+
+`make sign-app` -- Sign the application binary. Must set `AC_USERNAME` & `AC_PASSWORD` environment variables to work.
+If you are testing outside of the main application the `bundle_id` inside of `gon-app.hcl` will need to be changed as well.
+
+`make dmg` -- Create the DMG for the application
+
+`make notarize-dmg` -- Notarize the DMG with Apple. Must set `AC_USERNAME` & `AC_PASSWORD` environment variables to work.
+If you are testing outside of the main application the `bundle_id` inside of `gon-dmg.hcl` will need to be changed as well.
