@@ -64,3 +64,4 @@ jobs:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: oncall-status.dmg
           asset_name: oncall-status.dmg
+          asset_content_type: application/octet-stream
