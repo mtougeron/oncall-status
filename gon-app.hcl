@@ -8,8 +8,3 @@ apple_id {
 sign {
   application_identity = "63B65F5D57B165EE22DE1DACA8A474A6E7C5564E"
 }
-
-dmg {
-  output_path = "oncall-status.dmg"
-  volume_name = "oncall-status"
-}

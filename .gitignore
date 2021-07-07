@@ -16,4 +16,5 @@
 
 # Ignore the compiled binary
 OncallStatus.app/Contents/OncallStatus
+OncallStatus.app/Contents/MacOS/OncallStatus
 OncallStatus.app/Contents/_CodeSignature/
