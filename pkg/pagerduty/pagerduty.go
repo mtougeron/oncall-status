@@ -36,7 +36,7 @@ func (pd *Client) GetCurrentUserID() string {
 }
 
 // GetUserOncallStatus is the user oncall or not
-func (pd *Client) GetUserOncallStatus(userID string) bool {
+func (pd *Client) GetUserOncallStatus(userID string, escalationLevel int) bool {
 
 	var userOpts pagerduty.GetUserOptions
 	if userID == "" {
@@ -69,7 +69,7 @@ func (pd *Client) GetUserOncallStatus(userID string) bool {
 	}
 
 	for _, oncall := range oncalls {
-		if oncall.EscalationLevel == 1 {
+		if oncall.EscalationLevel <= uint(escalationLevel) {
 			return true
 		}
 	}
@@ -77,7 +77,7 @@ func (pd *Client) GetUserOncallStatus(userID string) bool {
 }
 
 // GetUserIncidents get a list of incidents assigned to a user
-func (pd *Client) GetUserIncidents(userID string) []UserIncident {
+func (pd *Client) GetUserIncidents(userID string, includeLowPriority bool) []UserIncident {
 
 	var response []UserIncident
 	var userOpts pagerduty.GetUserOptions
@@ -95,6 +95,9 @@ func (pd *Client) GetUserIncidents(userID string) []UserIncident {
 
 	incidentOpts.UserIDs = append(incidentOpts.UserIDs, userID)
 	incidentOpts.Statuses = append(incidentOpts.Statuses, "triggered", "acknowledged")
+	if !includeLowPriority {
+		incidentOpts.Urgencies = append(incidentOpts.Urgencies, "high")
+	}
 
 	more := true
 	for more {

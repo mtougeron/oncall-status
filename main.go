@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"os"
+	"path/filepath"
 	"reflect"
 	"strconv"
 
@@ -14,6 +16,7 @@ import (
 	"sync"
 
 	"github.com/getlantern/systray"
+	"github.com/kirsle/configdir"
 	"github.com/skratchdot/open-golang/open"
 
 	"time"
@@ -26,7 +29,16 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+type AppSettings struct {
+	IncludeLowPriority bool `json:"include_low_priority"`
+	EscalationLevel    int  `json:"escalation_level"`
+}
+
 var (
+	settings   AppSettings
+	configFile string = ""
+	configPath string = ""
+
 	pagerdutyAPIKey     string = ""
 	pagerdutyUserID     string = ""
 	pagerdutySubDomain  string = ""
@@ -37,9 +49,13 @@ var (
 	httpServer         *http.Server
 	httpServerExitDone sync.WaitGroup
 
-	mLogin  *systray.MenuItem
-	mLogout *systray.MenuItem
-	mPD     *systray.MenuItem
+	mLogin              *systray.MenuItem
+	mLogout             *systray.MenuItem
+	mPD                 *systray.MenuItem
+	mIncludeLowPriority *systray.MenuItem
+	mEscalationLevelOne *systray.MenuItem
+	mEscalationLevelTwo *systray.MenuItem
+	mEscalationLevelAny *systray.MenuItem
 
 	keychainService                   string = "OncallStatus"
 	keychainAccessGroup               string = "oncall-status.mtougeron.github.com"
@@ -58,7 +74,7 @@ func setOncallStatus() {
 	if pagerdutyUserID == "" {
 		pagerdutyUserID = pagerdutyClient.GetCurrentUserID()
 	}
-	if pagerdutyClient.GetUserOncallStatus(pagerdutyUserID) {
+	if pagerdutyClient.GetUserOncallStatus(pagerdutyUserID, settings.EscalationLevel) {
 		systray.SetTitle("📳 oncall")
 		systray.SetTooltip("You are on call")
 	} else {
@@ -76,7 +92,7 @@ func checkForNewIncidents() {
 	for range time.Tick(60 * time.Second) {
 		if pagerdutyAPIKey != "" {
 			pagerdutyClient := pagerduty.NewPagerdutyClient(pagerdutyAPIKey)
-			currentIncidents := pagerdutyClient.GetUserIncidents(pagerdutyUserID)
+			currentIncidents := pagerdutyClient.GetUserIncidents(pagerdutyUserID, settings.IncludeLowPriority)
 			if len(currentIncidents) > 0 {
 				systray.SetTitle("🚨 " + strconv.Itoa(len(currentIncidents)) + " PD incidents")
 			} else {
@@ -151,10 +167,42 @@ func main() {
 		}
 	}
 
+	readConfig()
+
 	go checkForNewIncidents()
 
 	systray.Run(onReady, nil)
 
+}
+
+func readConfig() {
+	configPath = configdir.LocalConfig("oncall-status")
+	err := configdir.MakePath(configPath) // Ensure it exists.
+	if err != nil {
+		panic(err)
+	}
+	configFile = filepath.Join(configPath, "settings.json")
+	if _, err = os.Stat(configFile); os.IsNotExist(err) {
+		// Create the new config file.
+		settings = AppSettings{false, 999}
+		fh, err := os.OpenFile(configFile, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
+		if err != nil {
+			panic(err)
+		}
+		fh.Close()
+
+		saveSettings()
+	} else {
+		// Load the existing file.
+		fh, err := os.Open(configFile)
+		if err != nil {
+			panic(err)
+		}
+		defer fh.Close()
+
+		decoder := json.NewDecoder(fh)
+		decoder.Decode(&settings)
+	}
 }
 
 func startHttpServer(wg *sync.WaitGroup) (*http.Server, string) {
@@ -313,6 +361,74 @@ func handleGotoPagerDutyMenuItem() {
 	}
 }
 
+func handleIncludeLowPriorityMenuItem() {
+	for {
+		<-mIncludeLowPriority.ClickedCh
+		if mIncludeLowPriority.Checked() {
+			mIncludeLowPriority.Uncheck()
+			settings.IncludeLowPriority = false
+		} else {
+			mIncludeLowPriority.Check()
+			settings.IncludeLowPriority = true
+		}
+		saveSettings()
+	}
+}
+
+func handleEscalationLevelOneMenuItem() {
+	for {
+		<-mEscalationLevelOne.ClickedCh
+		if !mEscalationLevelOne.Checked() {
+			mEscalationLevelOne.Check()
+			mEscalationLevelTwo.Uncheck()
+			mEscalationLevelAny.Uncheck()
+			settings.EscalationLevel = 1
+			saveSettings()
+			setOncallStatus()
+		}
+	}
+}
+
+func handleEscalationLevelTwoMenuItem() {
+	for {
+		<-mEscalationLevelTwo.ClickedCh
+		if !mEscalationLevelTwo.Checked() {
+			mEscalationLevelTwo.Check()
+			mEscalationLevelOne.Uncheck()
+			mEscalationLevelAny.Uncheck()
+			settings.EscalationLevel = 2
+			saveSettings()
+			setOncallStatus()
+		}
+	}
+}
+
+func handleEscalationLevelAnyMenuItem() {
+	for {
+		<-mEscalationLevelAny.ClickedCh
+		if !mEscalationLevelAny.Checked() {
+			mEscalationLevelAny.Check()
+			mEscalationLevelOne.Uncheck()
+			mEscalationLevelTwo.Uncheck()
+			settings.EscalationLevel = 999
+			saveSettings()
+			setOncallStatus()
+		}
+	}
+}
+
+func saveSettings() {
+	fh, err := os.OpenFile(configFile, os.O_WRONLY, 0600)
+	if err != nil {
+		panic(err)
+	}
+
+	defer fh.Close()
+
+	encoder := json.NewEncoder(fh)
+	encoder.Encode(&settings)
+}
+
 func onReady() {
 
 	if pagerdutyAPIKey == "" {
@@ -324,9 +440,29 @@ func onReady() {
 
 	http.HandleFunc("/oauth-handler", oauthHandler)
 
+	mSubMenu := systray.AddMenuItem("Settings", "")
+	mIncludeLowPriority = mSubMenu.AddSubMenuItemCheckbox("Include Low Priority Incidents", "", settings.IncludeLowPriority)
+	mEscalationSettingsSubMenu := mSubMenu.AddSubMenuItem("Escalation Level", "")
+	levelOne := false
+	levelTwo := false
+	levelAny := false
+	if settings.EscalationLevel == 1 {
+		levelOne = true
+	} else if settings.EscalationLevel == 2 {
+		levelTwo = true
+	} else {
+		levelAny = true
+	}
+
+	mEscalationLevelOne = mEscalationSettingsSubMenu.AddSubMenuItemCheckbox("<= 1", "Escalation Level 1", levelOne)
+	mEscalationLevelTwo = mEscalationSettingsSubMenu.AddSubMenuItemCheckbox("<= 2", "Escalation Level 2", levelTwo)
+	mEscalationLevelAny = mEscalationSettingsSubMenu.AddSubMenuItemCheckbox("Any", "Any Escalation Level", levelAny)
+
+	systray.AddSeparator()
 	mPD = systray.AddMenuItem("Go to PagerDuty", "Go to PagerDuty Incidents page")
 	mLogin = systray.AddMenuItem("Login", "Log into PagerDuty")
 	mLogout = systray.AddMenuItem("Logout", "Log out of Oncall Status")
+
 	if pagerdutyAPIKey != "" {
 		mLogin.Hide()
 	} else {
@@ -334,9 +470,14 @@ func onReady() {
 	}
 	systray.AddSeparator()
 
+	// TODO: There's got to be a better way to handle this...
 	go handleLoginMenuItem()
 	go handleLogoutMenuItem()
 	go handleGotoPagerDutyMenuItem()
+	go handleIncludeLowPriorityMenuItem()
+	go handleEscalationLevelOneMenuItem()
+	go handleEscalationLevelTwoMenuItem()
+	go handleEscalationLevelAnyMenuItem()
 
 	mQuit := systray.AddMenuItem("Quit", "Quit PagerDuty Oncall Status")
 	go func() {
