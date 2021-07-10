@@ -6,8 +6,13 @@ jobs:
     steps:
       - name: Checkout Source
         uses: actions/checkout@v2
-      - name: Download Gosec
-        run: curl -sfL https://raw.githubusercontent.com/securego/gosec/master/install.sh | sudo sh -s -- -b /usr/bin latest
+      - name: Set up Go 1.x
+        uses: actions/setup-go@v2
+        with:
+          go-version: ^1.16
+        id: go
+      - name: Install gosec
+        run: brew install gosec
       - name: Run Gosec Security Scanner
         #G107: Url provided to HTTP request as taint input
         #G109: Potential Integer overflow made by strconv.Atoi result conversion to int16/32
