@@ -1,10 +1,9 @@
 package pagerduty
 
 import (
-	"os/exec"
-
 	pagerduty "github.com/PagerDuty/go-pagerduty"
 	log "github.com/sirupsen/logrus"
+	"github.com/skratchdot/open-golang/open"
 )
 
 // Client has the pagerduty.Client
@@ -21,7 +20,10 @@ type UserIncident struct {
 
 // Open opens the URL
 func (ui *UserIncident) Open() {
-	exec.Command("open", ui.URL).Run()
+	err := open.Run(ui.URL)
+	if err != nil {
+		log.Warnln("Error opening incident URL: ", err)
+	}
 }
 
 // NewPagerdutyClient Create the pagerduty client

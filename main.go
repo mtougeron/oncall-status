@@ -101,7 +101,7 @@ func checkForNewIncidents() {
 			newIncidents := getNewIncidents(previousIncidents, currentIncidents)
 			if len(newIncidents) > 0 {
 				for _, incident := range newIncidents {
-					notify.Push("New PagerDuty incident", incident.Title, "", notificator.UR_CRITICAL)
+					_ = notify.Push("New PagerDuty incident", incident.Title, "", notificator.UR_CRITICAL)
 				}
 			}
 			previousIncidents = currentIncidents
@@ -189,7 +189,10 @@ func readConfig() {
 		if err != nil {
 			panic(err)
 		}
-		fh.Close()
+		err = fh.Close()
+		if err != nil {
+			log.Warnln("Unable to close settings file: ", err)
+		}
 
 		saveSettings()
 	} else {
@@ -198,10 +201,18 @@ func readConfig() {
 		if err != nil {
 			panic(err)
 		}
-		defer fh.Close()
 
 		decoder := json.NewDecoder(fh)
-		decoder.Decode(&settings)
+		err = decoder.Decode(&settings)
+		if err != nil {
+			log.Warnln("Problem decoding settings file.")
+		}
+
+		err = fh.Close()
+		if err != nil {
+			log.Warnln("Unable to close settings file: ", err)
+		}
+
 	}
 }
 
@@ -230,6 +241,7 @@ func oauthHandler(w http.ResponseWriter, r *http.Request) {
 
 	code := r.URL.Query().Get("code")
 	subdomain := r.URL.Query().Get("subdomain")
+	loginSucceeded := false
 	if code == "" {
 		fmt.Fprintf(w, "Login has failed. You may close this window.")
 	} else {
@@ -240,17 +252,24 @@ func oauthHandler(w http.ResponseWriter, r *http.Request) {
 			fmt.Fprintf(w, "Login has failed. You may close this window.")
 		} else {
 			var res map[string]interface{}
-			json.NewDecoder(resp.Body).Decode(&res)
-			setPagerDutyAPIKey(fmt.Sprintf("%s", res["access_token"]), subdomain)
-			fmt.Fprintf(w, "You are now logged in. You may close this window.")
+			err := json.NewDecoder(resp.Body).Decode(&res)
+			if err != nil {
+				fmt.Fprintf(w, "Could not decode PagerDuty response")
+			} else {
+				loginSucceeded = true
+				setPagerDutyAPIKey(fmt.Sprintf("%s", res["access_token"]), subdomain)
+				fmt.Fprintf(w, "You are now logged in. You may close this window.")
+			}
 		}
 	}
 
 	codeChallenge = ""
 
-	mLogin.Hide()
-	mLogout.Show()
-	setOncallStatus()
+	if loginSucceeded {
+		mLogin.Hide()
+		mLogout.Show()
+		setOncallStatus()
+	}
 	go shutdownHttpServer()
 }
 
@@ -315,7 +334,7 @@ func handleLoginMenuItem() {
 		<-mLogin.ClickedCh
 		httpServerExitDone.Add(1)
 		httpServer, URL = startHttpServer(httpServerExitDone)
-		open.Run(buildOauthURL(URL))
+		_ = open.Run(buildOauthURL(URL))
 	}
 }
 
@@ -330,7 +349,7 @@ func handleLogoutMenuItem() {
 		apiKey.SetAccount(keychainPagerDutyAPIKeyAccount)
 		apiKey.SetLabel(keychainLabel)
 		apiKey.SetAccessGroup(keychainAccessGroup)
-		keychain.DeleteItem(apiKey)
+		_ = keychain.DeleteItem(apiKey)
 
 		apiKey = keychain.NewItem()
 		apiKey.SetSecClass(keychain.SecClassGenericPassword)
@@ -338,7 +357,7 @@ func handleLogoutMenuItem() {
 		apiKey.SetAccount(keychainPagerDutySubDomainAccount)
 		apiKey.SetLabel(keychainLabel)
 		apiKey.SetAccessGroup(keychainAccessGroup)
-		keychain.DeleteItem(apiKey)
+		_ = keychain.DeleteItem(apiKey)
 
 		mLogin.Show()
 		mLogout.Hide()
@@ -357,7 +376,7 @@ func handleGotoPagerDutyMenuItem() {
 			subdomain = pagerdutySubDomain
 		}
 		URL := fmt.Sprintf("https://%s.pagerduty.com/incidents", subdomain)
-		open.Run(URL)
+		_ = open.Run(URL)
 	}
 }
 
@@ -423,10 +442,16 @@ func saveSettings() {
 		panic(err)
 	}
 
-	defer fh.Close()
-
 	encoder := json.NewEncoder(fh)
-	encoder.Encode(&settings)
+	err = encoder.Encode(&settings)
+	if err != nil {
+		log.Warnln("Problem encoding settings file.")
+	}
+
+	err = fh.Close()
+	if err != nil {
+		log.Warnln("Unable to close settings file: ", err)
+	}
 }
 
 func onReady() {
