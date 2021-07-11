@@ -49,5 +49,5 @@ func ShowNotification(notification Notification) {
 	}
 	cstr := C.CString(string(b))
 	C.showNotification(cstr)
-	C.free(unsafe.Pointer(cstr))
+	C.free(unsafe.Pointer(cstr)) // #nosec G103
 }
