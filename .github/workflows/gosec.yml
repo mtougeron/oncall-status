@@ -1,5 +1,9 @@
 name: Gosec
-on: [push, pull_request]
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
 jobs:
   gosec:
     runs-on: macos-latest
@@ -18,4 +22,4 @@ jobs:
         #G109: Potential Integer overflow made by strconv.Atoi result conversion to int16/32
         #G304: prevent loading configuration files from variable locations (we want to do this in local development)
         #G601: Implicit memory aliasing in for loop.  (disabled due to false positives for safe code)
-        run: $(go env GOPATH)/bin/gosec -exclude=G107,G109,G304,G601 ./...
+        run: $(go env GOPATH)/bin/gosec -exclude=G107,G109,G304,G601 -exclude-dir=pkg/notification ./...

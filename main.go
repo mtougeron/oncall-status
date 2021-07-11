@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"reflect"
 	"strconv"
 
 	"context"
@@ -23,7 +22,7 @@ import (
 
 	keychain "github.com/keybase/go-keychain"
 
-	"github.com/0xAX/notificator"
+	"github.com/mtougeron/oncall-status/pkg/notification"
 	"github.com/mtougeron/oncall-status/pkg/pagerduty"
 	cv "github.com/nirasan/go-oauth-pkce-code-verifier"
 	log "github.com/sirupsen/logrus"
@@ -85,9 +84,6 @@ func setOncallStatus() {
 
 func checkForNewIncidents() {
 	var previousIncidents []pagerduty.UserIncident
-	notify := notificator.New(notificator.Options{
-		AppName: "PagerDuty Oncall Status",
-	})
 
 	for range time.Tick(60 * time.Second) {
 		if pagerdutyAPIKey != "" {
@@ -98,34 +94,21 @@ func checkForNewIncidents() {
 			} else {
 				setOncallStatus()
 			}
-			newIncidents := getNewIncidents(previousIncidents, currentIncidents)
+			newIncidents := pagerduty.GetNewIncidents(previousIncidents, currentIncidents)
 			if len(newIncidents) > 0 {
 				for _, incident := range newIncidents {
-					_ = notify.Push("New PagerDuty incident", incident.Title, "", notificator.UR_CRITICAL)
+					incidentNotification := notification.Notification{
+						Title:      "New PagerDuty incident (" + incident.Urgency + ")",
+						Message:    incident.Title,
+						URL:        incident.URL,
+						Identifier: incident.ID,
+					}
+					notification.ShowNotification(incidentNotification)
 				}
 			}
 			previousIncidents = currentIncidents
 		}
 	}
-}
-
-func getNewIncidents(oldIncidents []pagerduty.UserIncident, currentIncidents []pagerduty.UserIncident) []pagerduty.UserIncident {
-	var newIncidents []pagerduty.UserIncident
-	if reflect.DeepEqual(oldIncidents, currentIncidents) || len(currentIncidents) == 0 {
-		return newIncidents
-	}
-
-	oldIDs := map[string]string{}
-	for _, incident := range oldIncidents {
-		oldIDs[incident.ID] = incident.ID
-	}
-
-	for _, incident := range currentIncidents {
-		if _, ok := oldIDs[incident.ID]; !ok {
-			newIncidents = append(newIncidents, incident)
-		}
-	}
-	return newIncidents
 }
 
 func main() {

@@ -28,5 +28,11 @@
     <true/>
     <key>NSHighResolutionCapable</key>
     <true/>
+    <key>NotificationsEnabled</key>
+    <true/>
+    <key>ShowInLockScreen</key>
+    <true/>
+    <key>ShowInNotificationCenter</key>
+    <true/>
   </dict>
 </plist>

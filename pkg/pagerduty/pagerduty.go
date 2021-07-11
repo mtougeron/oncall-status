@@ -1,6 +1,8 @@
 package pagerduty
 
 import (
+	"reflect"
+
 	pagerduty "github.com/PagerDuty/go-pagerduty"
 	log "github.com/sirupsen/logrus"
 	"github.com/skratchdot/open-golang/open"
@@ -13,9 +15,10 @@ type Client struct {
 
 // UserIncident a simple struct of an incident
 type UserIncident struct {
-	Title string
-	URL   string
-	ID    string
+	Title   string
+	URL     string
+	ID      string
+	Urgency string
 }
 
 // Open opens the URL
@@ -115,11 +118,31 @@ func (pd *Client) GetUserIncidents(userID string, includeLowPriority bool) []Use
 
 	for _, incident := range incidents {
 		response = append(response, UserIncident{
-			ID:    incident.Id,
-			Title: incident.Title,
-			URL:   incident.HTMLURL,
+			ID:      incident.Id,
+			Title:   incident.Title,
+			URL:     incident.HTMLURL,
+			Urgency: incident.Urgency,
 		})
 	}
 
 	return response
+}
+
+func GetNewIncidents(oldIncidents []UserIncident, currentIncidents []UserIncident) []UserIncident {
+	var newIncidents []UserIncident
+	if reflect.DeepEqual(oldIncidents, currentIncidents) || len(currentIncidents) == 0 {
+		return newIncidents
+	}
+
+	oldIDs := map[string]string{}
+	for _, incident := range oldIncidents {
+		oldIDs[incident.ID] = incident.ID
+	}
+
+	for _, incident := range currentIncidents {
+		if _, ok := oldIDs[incident.ID]; !ok {
+			newIncidents = append(newIncidents, incident)
+		}
+	}
+	return newIncidents
 }
