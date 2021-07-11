@@ -1,12 +1,9 @@
 name: Gosec
 on:
   push:
-    branches:
-      - main
+    branches: [ main ]
   pull_request:
-    branches:
-      - '**'
-  tags:
+    branches: [ main ]
 jobs:
   gosec:
     runs-on: macos-latest
