@@ -1,5 +1,10 @@
 name: Gosec
-on: [push, pull_request]
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  tags:
 jobs:
   gosec:
     runs-on: macos-latest
