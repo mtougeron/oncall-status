@@ -24,6 +24,7 @@ import (
 
 	"github.com/mtougeron/oncall-status/pkg/notification"
 	"github.com/mtougeron/oncall-status/pkg/pagerduty"
+	"github.com/mtougeron/oncall-status/pkg/startup"
 	cv "github.com/nirasan/go-oauth-pkce-code-verifier"
 	log "github.com/sirupsen/logrus"
 )
@@ -55,6 +56,7 @@ var (
 	mEscalationLevelOne *systray.MenuItem
 	mEscalationLevelTwo *systray.MenuItem
 	mEscalationLevelAny *systray.MenuItem
+	mStartupItem        *systray.MenuItem
 
 	keychainService                   string = "OncallStatus"
 	keychainAccessGroup               string = "oncall-status.mtougeron.github.com"
@@ -310,6 +312,19 @@ func buildOauthURL(URL string) string {
 	return "https://app.pagerduty.com/oauth/authorize?client_id=" + pagerdutyClientID + "&response_type=code&code_challenge_method=S256&code_challenge=" + codeChallenge + "&redirect_uri=" + url.QueryEscape("http://127.0.0.1:58473/oauth-handler")
 }
 
+func handleStartupItem() {
+	for {
+		<-mStartupItem.ClickedCh
+		if mStartupItem.Checked() {
+			startup.RemoveStartupItem()
+			mStartupItem.Uncheck()
+		} else {
+			startup.AddStartupItem()
+			mStartupItem.Check()
+		}
+	}
+}
+
 func handleLoginMenuItem() {
 	var URL string
 	httpServerExitDone := &sync.WaitGroup{}
@@ -466,6 +481,8 @@ func onReady() {
 	mEscalationLevelTwo = mEscalationSettingsSubMenu.AddSubMenuItemCheckbox("<= 2", "Escalation Level 2", levelTwo)
 	mEscalationLevelAny = mEscalationSettingsSubMenu.AddSubMenuItemCheckbox("Any", "Any Escalation Level", levelAny)
 
+	mStartupItem = mSubMenu.AddSubMenuItemCheckbox("Run at startup", "", startup.RunningAtStartup())
+
 	systray.AddSeparator()
 	mPD = systray.AddMenuItem("Go to PagerDuty", "Go to PagerDuty Incidents page")
 	mLogin = systray.AddMenuItem("Login", "Log into PagerDuty")
@@ -486,6 +503,7 @@ func onReady() {
 	go handleEscalationLevelOneMenuItem()
 	go handleEscalationLevelTwoMenuItem()
 	go handleEscalationLevelAnyMenuItem()
+	go handleStartupItem()
 
 	mQuit := systray.AddMenuItem("Quit", "Quit PagerDuty Oncall Status")
 	go func() {

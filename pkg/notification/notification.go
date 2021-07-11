@@ -16,8 +16,9 @@ void showNotification(const char *jsonString);
 import "C"
 import (
 	"encoding/json"
-	"log"
 	"unsafe"
+
+	log "github.com/sirupsen/logrus"
 )
 
 // Notification represents an NSUserNotification
@@ -44,7 +45,7 @@ type Notification struct {
 func ShowNotification(notification Notification) {
 	b, err := json.Marshal(notification)
 	if err != nil {
-		log.Printf("Marshal: %v", err)
+		log.Warnln("Marshal: %v", err)
 		return
 	}
 	cstr := C.CString(string(b))
