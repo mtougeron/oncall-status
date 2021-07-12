@@ -4,6 +4,10 @@ A PagerDuty utility app to show if you're oncall. Also shows a notification when
 
 ![Go](https://github.com/mtougeron/oncall-status/workflows/Go/badge.svg) ![Gosec](https://github.com/mtougeron/oncall-status/workflows/Gosec/badge.svg) [![GitHub release](https://img.shields.io/github/v/release/mtougeron/oncall-status?sort=semver)](https://github.com/mtougeron/oncall-status/releases)
 
+## Installation
+
+From the [releases page](https://github.com/mtougeron/oncall-status/releases) download the latest DMG file. Once downloaded, drag the `OncallStatus.app` to the `Applications` folder.
+
 ## Basic build & test
 
 ```
