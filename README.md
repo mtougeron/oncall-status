@@ -28,6 +28,12 @@ The settings menu let's you configure the notification statuses. For example, wh
 
 ![](images/oncall-status.png)
 
+### How authentication works
+
+The login connects to PagerDuty using [PKCE](https://oauth.net/2/pkce/) to authenticate you as a user and get a read-only API token. This token is then saved into the MacOS keychain for secure storage.
+
+[More about PKCE from PagerDuty API docs](https://developer.pagerduty.com/docs/app-integration-development/oauth-2-pkce/)
+
 ## Basic build & test
 
 ```
