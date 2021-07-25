@@ -463,6 +463,9 @@ func onReady() {
 
 	http.HandleFunc("/oauth-handler", oauthHandler)
 
+	mPD = systray.AddMenuItem("Go to PagerDuty", "Go to PagerDuty Incidents page")
+	systray.AddSeparator()
+
 	mSubMenu := systray.AddMenuItem("Settings", "")
 	mIncludeLowPriority = mSubMenu.AddSubMenuItemCheckbox("Include Low Priority Incidents", "", settings.IncludeLowPriority)
 	mEscalationSettingsSubMenu := mSubMenu.AddSubMenuItem("Escalation Level", "")
