@@ -21,6 +21,8 @@ jobs:
         id: go
 
       - name: Build
+        env:
+          APP_VERSION: ${{ github.ref }}
         run: |
           make build
 
