@@ -25,6 +25,7 @@ import (
 	"github.com/mtougeron/oncall-status/pkg/notification"
 	"github.com/mtougeron/oncall-status/pkg/pagerduty"
 	"github.com/mtougeron/oncall-status/pkg/startup"
+	"github.com/mtougeron/oncall-status/pkg/version"
 	cv "github.com/nirasan/go-oauth-pkce-code-verifier"
 	log "github.com/sirupsen/logrus"
 )
@@ -32,9 +33,12 @@ import (
 type AppSettings struct {
 	IncludeLowPriority bool `json:"include_low_priority"`
 	EscalationLevel    int  `json:"escalation_level"`
+	CheckForUpdates    bool `json:"check_for_updates,omitempty"`
 }
 
 var (
+	buildVersion string = ""
+
 	settings   AppSettings
 	configFile string = ""
 	configPath string = ""
@@ -57,6 +61,7 @@ var (
 	mEscalationLevelTwo *systray.MenuItem
 	mEscalationLevelAny *systray.MenuItem
 	mStartupItem        *systray.MenuItem
+	mCheckForUpdates    *systray.MenuItem
 
 	keychainService                   string = "OncallStatus"
 	keychainAccessGroup               string = "oncall-status.mtougeron.github.com"
@@ -64,6 +69,32 @@ var (
 	keychainPagerDutyAPIKeyAccount    string = "PagerDutyAPIKey"
 	keychainPagerDutySubDomainAccount string = "PagerDutySubDomain"
 )
+
+func init() {
+	// APP Build information
+	log.Infoln("Starting application")
+	log.Infoln("Application Version:", buildVersion)
+}
+
+func checkForNewRelease() {
+	if settings.CheckForUpdates && version.CheckForNewVersion(buildVersion) {
+		showNewAppVersionNotification()
+	}
+	for range time.Tick(24 * 7 * time.Hour) {
+		if settings.CheckForUpdates && version.CheckForNewVersion(buildVersion) {
+			showNewAppVersionNotification()
+		}
+	}
+}
+
+func showNewAppVersionNotification() {
+	incidentNotification := notification.Notification{
+		Title:   "New OncallStatus version available",
+		Message: "There is a newer version of OncallStatus available on GitHub",
+		URL:     "https://github.com/mtougeron/oncall-status/releases",
+	}
+	notification.ShowNotification(incidentNotification)
+}
 
 func setOncallStatus() {
 	if pagerdutyAPIKey == "" {
@@ -114,7 +145,6 @@ func checkForNewIncidents() {
 }
 
 func main() {
-	log.Infoln("Starting application")
 
 	apiKeyQuery := keychain.NewItem()
 	apiKeyQuery.SetSecClass(keychain.SecClassGenericPassword)
@@ -154,6 +184,10 @@ func main() {
 
 	readConfig()
 
+	// Start checking for new releases
+	go checkForNewRelease()
+
+	// Start checking for new PD incidents
 	go checkForNewIncidents()
 
 	systray.Run(onReady, nil)
@@ -169,7 +203,11 @@ func readConfig() {
 	configFile = filepath.Join(configPath, "settings.json")
 	if _, err = os.Stat(configFile); os.IsNotExist(err) {
 		// Create the new config file.
-		settings = AppSettings{false, 999}
+		settings = AppSettings{
+			IncludeLowPriority: false,
+			EscalationLevel:    999,
+			CheckForUpdates:    true,
+		}
 		fh, err := os.OpenFile(configFile, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
 		if err != nil {
 			panic(err)
@@ -392,6 +430,20 @@ func handleIncludeLowPriorityMenuItem() {
 	}
 }
 
+func handleCheckForUpdatesItem() {
+	for {
+		<-mCheckForUpdates.ClickedCh
+		if mCheckForUpdates.Checked() {
+			mCheckForUpdates.Uncheck()
+			settings.CheckForUpdates = false
+		} else {
+			mCheckForUpdates.Check()
+			settings.CheckForUpdates = true
+		}
+		saveSettings()
+	}
+}
+
 func handleEscalationLevelOneMenuItem() {
 	for {
 		<-mEscalationLevelOne.ClickedCh
@@ -486,8 +538,9 @@ func onReady() {
 
 	mStartupItem = mSubMenu.AddSubMenuItemCheckbox("Run at startup", "", startup.RunningAtStartup())
 
+	mCheckForUpdates = mSubMenu.AddSubMenuItemCheckbox("Auto check for updates", "", settings.CheckForUpdates)
+
 	systray.AddSeparator()
-	mPD = systray.AddMenuItem("Go to PagerDuty", "Go to PagerDuty Incidents page")
 	mLogin = systray.AddMenuItem("Login", "Log into PagerDuty")
 	mLogout = systray.AddMenuItem("Logout", "Log out of Oncall Status")
 
@@ -506,6 +559,7 @@ func onReady() {
 	go handleEscalationLevelOneMenuItem()
 	go handleEscalationLevelTwoMenuItem()
 	go handleEscalationLevelAnyMenuItem()
+	go handleCheckForUpdatesItem()
 	go handleStartupItem()
 
 	mQuit := systray.AddMenuItem("Quit", "Quit PagerDuty Oncall Status")

@@ -1,7 +1,7 @@
 
 .PHONY: build
 build: clean
-	GOOS=darwin GOARCH=amd64 go build -o OncallStatus.app/Contents/MacOS/OncallStatus .
+	GOOS=darwin GOARCH=amd64 go build -ldflags="-X 'main.buildVersion=${APP_VERSION}'" -o OncallStatus.app/Contents/MacOS/OncallStatus .
 
 .PHONY: all
 all: build sign-app dmg notarize-dmg
