@@ -21,9 +21,8 @@ jobs:
         id: go
 
       - name: Build
-        env:
-          APP_VERSION: ${{ github.ref }}
         run: |
+          APP_VERSION=$(echo "${{ github.ref }}" | sed -e 's,.*/\(.*\),\1,')
           make build
 
       - name: Import Code-Signing Certificates
