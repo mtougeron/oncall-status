@@ -340,7 +340,7 @@ func shutdownHttpServer() {
 }
 
 func buildOauthURL(URL string) string {
-	var CodeVerifier, _ = cv.CreateCodeVerifier()
+	var CodeVerifier, _ = cv.CreateCodeVerifierWithLength(cv.MaxLength)
 
 	// Create code_challenge with S256 method
 	codeChallenge = CodeVerifier.CodeChallengeS256()
