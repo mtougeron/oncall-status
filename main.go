@@ -66,7 +66,7 @@ var (
 	keychainService                   string = "OncallStatus"
 	keychainAccessGroup               string = "oncall-status.mtougeron.github.com"
 	keychainLabel                     string = "PagerDuty OnCall Status"
-	keychainPagerDutyAPIKeyAccount    string = "PagerDutyAPIKey"
+	keychainPagerDutyAPIKeyAccount    string = "PagerDutyAPIKey" // #nosec G101
 	keychainPagerDutySubDomainAccount string = "PagerDutySubDomain"
 )
 
