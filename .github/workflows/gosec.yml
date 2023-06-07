@@ -16,7 +16,7 @@ jobs:
           go-version: ^1.16
         id: go
       - name: Download Gosec
-        run: curl -sfL https://raw.githubusercontent.com/securego/gosec/master/install.sh | sudo sh -s -- -b $(go env GOPATH)/bin latest
+        run: curl -sfL https://raw.githubusercontent.com/securego/gosec/master/install.sh | sudo sh -s -- -b $(go env GOPATH)/bin v2.15.0
       - name: Run Gosec Security Scanner
         #G107: Url provided to HTTP request as taint input
         #G109: Potential Integer overflow made by strconv.Atoi result conversion to int16/32
