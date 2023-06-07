@@ -241,7 +241,9 @@ func readConfig() {
 
 func startHttpServer(wg *sync.WaitGroup) (*http.Server, string) {
 	log.Infoln("Starting http server")
-	srv := &http.Server{}
+	srv := &http.Server{
+		ReadHeaderTimeout: 3 * time.Second,
+	}
 
 	// Originally meant to do 127.0.0.1:0 for random port but must specify port in app config
 	listener, err := net.Listen("tcp", "127.0.0.1:58473")
